@@ -21,7 +21,6 @@ COPY config.example.yaml ./config.yaml
 
 # Persistent mount point: bucket data from host
 # 持久化挂载点：记忆数据从宿主机挂进来
-VOLUME ["/data"]
 
 # Default to streamable-http for container (remote access)
 # 容器场景默认用 streamable-http
