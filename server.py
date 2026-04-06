@@ -120,8 +120,8 @@ async def api_list_buckets(request):
                 "resolved": meta.get("resolved", False),
                 "type": meta.get("type", "dynamic"),
                 "weight": round(score, 2),
-                "created_at": meta.get("created_at", ""),
-                "updated_at": meta.get("updated_at", ""),
+                "created": meta.get("created", ""),
+                "last_active": meta.get("last_active", ""),
             })
         result.sort(key=lambda x: x["weight"], reverse=True)
         return JSONResponse(result, headers={"Access-Control-Allow-Origin": "*"})
@@ -152,8 +152,8 @@ async def api_get_bucket(request):
             "resolved": meta.get("resolved", False),
             "type": meta.get("type", "dynamic"),
             "weight": round(score, 2),
-            "created_at": meta.get("created_at", ""),
-            "updated_at": meta.get("updated_at", ""),
+            "created": meta.get("created", ""),
+            "last_active": meta.get("last_active", ""),
         }, headers={"Access-Control-Allow-Origin": "*"})
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
