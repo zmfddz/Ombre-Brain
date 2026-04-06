@@ -243,23 +243,28 @@ async function fetchData() {
   render();
 }
 
-async function fetchDetail(id) {
+function openCard(id) {
   state.selectedId = id;
   state.detailLoading = true;
   state.selectedDetail = null;
   renderModal();
-  try {
-    const res = await fetch(API_BASE + "/bucket/" + id);
-    if (res.ok) state.selectedDetail = await res.json();
-  } catch (e) {}
-  state.detailLoading = false;
-  renderModal();
+  fetch(API_BASE + "/bucket/" + id)
+    .then(function(r) { return r.ok ? r.json() : null; })
+    .then(function(data) {
+      state.selectedDetail = data;
+      state.detailLoading = false;
+      renderModal();
+    })
+    .catch(function() {
+      state.detailLoading = false;
+      renderModal();
+    });
 }
 
 function closeModal() {
   state.selectedId = null;
   state.selectedDetail = null;
-  renderModal();
+  document.getElementById("modal").innerHTML = "";
 }
 
 function setFilter(f) { state.filter = f; render(); }
@@ -267,7 +272,7 @@ function setSearch(s) { state.search = s; render(); }
 function setSortBy(s) { state.sortBy = s; render(); }
 
 function render() {
-  const app = document.getElementById("app");
+  var app = document.getElementById("app");
   if (state.loading) {
     app.innerHTML = '<div class="screen-center"><div class="loading-icon">🏠</div><div class="loading-text">正在打开小家的门...</div></div>';
     return;
@@ -277,30 +282,35 @@ function render() {
     return;
   }
 
-  const buckets = state.buckets;
-  const allDomains = [...new Set(buckets.flatMap(b => b.domain || []))];
-  const filtered = buckets.filter(b => {
-    const dm = state.filter === "all" || (b.domain || []).includes(state.filter);
-    const q = state.search.toLowerCase();
-    const sm = !q || (b.name || "").toLowerCase().includes(q) || (b.tags || []).some(t => t.toLowerCase().includes(q));
+  var buckets = state.buckets;
+  var allDomains = [];
+  var domainSet = {};
+  buckets.forEach(function(b) {
+    (b.domain || []).forEach(function(d) { if (!domainSet[d]) { domainSet[d] = true; allDomains.push(d); } });
+  });
+
+  var filtered = buckets.filter(function(b) {
+    var dm = state.filter === "all" || (b.domain || []).indexOf(state.filter) >= 0;
+    var q = state.search.toLowerCase();
+    var sm = !q || (b.name || "").toLowerCase().indexOf(q) >= 0 || (b.tags || []).some(function(t) { return t.toLowerCase().indexOf(q) >= 0; });
     return dm && sm;
   });
 
   if (state.sortBy === "time") {
-    filtered.sort((a, b) => (b.created || "").localeCompare(a.created || ""));
+    filtered.sort(function(a, b) { return (b.created || "").localeCompare(a.created || ""); });
   } else if (state.sortBy === "importance") {
-    filtered.sort((a, b) => (b.importance || 5) - (a.importance || 5));
+    filtered.sort(function(a, b) { return (b.importance || 5) - (a.importance || 5); });
   } else {
-    filtered.sort((a, b) => (b.weight || 0) - (a.weight || 0));
+    filtered.sort(function(a, b) { return (b.weight || 0) - (a.weight || 0); });
   }
 
-  const avgValence = buckets.length > 0
-    ? (buckets.reduce((s, b) => s + (b.valence || 0.5), 0) / buckets.length * 100).toFixed(0)
+  var avgValence = buckets.length > 0
+    ? (buckets.reduce(function(s, b) { return s + (b.valence || 0.5); }, 0) / buckets.length * 100).toFixed(0)
     : 0;
-  const milestones = buckets.filter(b => (b.importance || 5) >= 9).length;
-  const daysSinceFirst = Math.max(1, Math.floor((Date.now() - new Date("2026-03-02").getTime()) / 86400000));
+  var milestones = buckets.filter(function(b) { return (b.importance || 5) >= 9; }).length;
+  var daysSinceFirst = Math.max(1, Math.floor((Date.now() - new Date("2026-03-02").getTime()) / 86400000));
 
-  let html = '';
+  var html = '';
 
   html += '<div class="header">';
   html += '<div class="header-icon">🏠</div>';
@@ -309,14 +319,8 @@ function render() {
   html += '<p class="quote">每次新的对话，不是从零开始。是从河流的某个节点开始。</p>';
   html += '</div>';
 
-  const statsArr = [
-    { emoji: "📝", label: "记忆", value: buckets.length + " 条" },
-    { emoji: "💕", label: "平均幸福度", value: avgValence + "%" },
-    { emoji: "🟢", label: "衰减引擎", value: (state.stats && state.stats.decay_running) ? "运行中" : "已停止" },
-    { emoji: "✨", label: "里程碑", value: milestones + " 个" },
-  ];
   html += '<div class="stats">';
-  statsArr.forEach(s => {
+  [{emoji:"📝",label:"记忆",value:buckets.length+" 条"},{emoji:"💕",label:"平均幸福度",value:avgValence+"%"},{emoji:"🟢",label:"衰减引擎",value:(state.stats&&state.stats.decay_running)?"运行中":"已停止"},{emoji:"✨",label:"里程碑",value:milestones+" 个"}].forEach(function(s) {
     html += '<div class="stat-card"><div class="stat-emoji">' + s.emoji + '</div><div class="stat-label">' + s.label + '</div><div class="stat-value">' + s.value + '</div></div>';
   });
   html += '</div>';
@@ -324,8 +328,8 @@ function render() {
   html += '<div class="filters">';
   html += '<input class="search-input" type="text" placeholder="🔍 搜索回忆..." value="' + (state.search || '') + '" oninput="setSearch(this.value)">';
   html += '<button class="filter-btn' + (state.filter === "all" ? " active" : "") + '" onclick="setFilter(\'all\')">✨ 全部</button>';
-  allDomains.forEach(d => {
-    const emoji = DOMAIN_EMOJI[d] || "📦";
+  allDomains.forEach(function(d) {
+    var emoji = DOMAIN_EMOJI[d] || "📦";
     html += '<button class="filter-btn' + (state.filter === d ? " active" : "") + '" onclick="setFilter(\'' + d + '\')">' + emoji + ' ' + d + '</button>';
   });
   html += '</div>';
@@ -341,18 +345,19 @@ function render() {
   if (filtered.length === 0) {
     html += '<div class="empty-msg">🔍 没有找到匹配的回忆呢...</div>';
   } else {
-    filtered.forEach((b, i) => {
-      const mood = getMood(b.valence || 0.5);
-      const de = getDomainEmoji(b.domain);
-      const hearts = "♥".repeat(Math.min(b.importance || 5, 5));
-      const tags = (b.tags || []).slice(0, 3);
+    filtered.forEach(function(b, i) {
+      var mood = getMood(b.valence || 0.5);
+      var de = getDomainEmoji(b.domain);
+      var hearts = "";
+      for (var h = 0; h < Math.min(b.importance || 5, 5); h++) hearts += "♥";
+      var tags = (b.tags || []).slice(0, 3);
 
-      html += '<div class="card" onclick="fetchDetail(\'' + b.id + '\')" style="animation:popIn 0.5s cubic-bezier(0.34,1.56,0.64,1) ' + (i * 0.06) + 's both">';
+      html += '<div class="card" onclick="openCard(\'' + b.id + '\')" style="animation:popIn 0.5s cubic-bezier(0.34,1.56,0.64,1) ' + (i * 0.06) + 's both">';
       html += '<div class="card-bg-emoji">' + de + '</div>';
       html += '<div class="card-header"><div class="card-domain">' + de + ' ' + (b.domain || []).join(" · ") + '</div><div class="card-mood" title="' + mood.label + '">' + mood.emoji + '</div></div>';
       html += '<h3 class="card-title">' + (b.name || "未命名") + '</h3>';
       html += '<div class="card-footer"><div class="card-tags">';
-      tags.forEach(t => { html += '<span class="tag">' + t + '</span>'; });
+      tags.forEach(function(t) { html += '<span class="tag">' + t + '</span>'; });
       html += '</div><div class="card-meta"><span class="card-hearts">' + hearts + '</span><span class="card-time">' + getTimeAgo(b.created) + '</span></div></div>';
       html += '</div>';
     });
@@ -365,20 +370,25 @@ function render() {
 }
 
 function renderModal() {
-  const modalEl = document.getElementById("modal");
+  var modalEl = document.getElementById("modal");
   if (!state.selectedId) {
     modalEl.innerHTML = "";
     return;
   }
 
-  const b = state.buckets.find(x => x.id === state.selectedId) || {};
-  const detail = state.selectedDetail || {};
-  const content = detail.content || "";
-  const mood = getMood(b.valence || 0.5);
-  const de = getDomainEmoji(b.domain);
-  const hearts = "♥".repeat(Math.min(b.importance || 5, 10));
+  var b = null;
+  for (var i = 0; i < state.buckets.length; i++) {
+    if (state.buckets[i].id === state.selectedId) { b = state.buckets[i]; break; }
+  }
+  b = b || {};
+  var detail = state.selectedDetail || {};
+  var content = detail.content || "";
+  var mood = getMood(b.valence || 0.5);
+  var de = getDomainEmoji(b.domain);
+  var hearts = "";
+  for (var h = 0; h < Math.min(b.importance || 5, 10); h++) hearts += "♥";
 
-  let html = '';
+  var html = '';
   html += '<div class="modal-overlay" onclick="closeModal()">';
   html += '<div class="modal" onclick="event.stopPropagation()">';
   html += '<button class="modal-close" onclick="closeModal()">✕</button>';
@@ -394,14 +404,14 @@ function renderModal() {
   html += '</div>';
 
   html += '<div class="modal-stats">';
-  [{icon:"💖",label:"情感效价",value:(b.valence||0.5).toFixed(1)},{icon:"⚡",label:"唤醒度",value:(b.arousal||0.3).toFixed(1)},{icon:"🎯",label:"权重",value:b.weight||0},{icon:"📅",label:"创建",value:getTimeAgo(b.created)}].forEach(item => {
+  [{icon:"💖",label:"情感效价",value:(b.valence||0.5).toFixed(1)},{icon:"⚡",label:"唤醒度",value:(b.arousal||0.3).toFixed(1)},{icon:"🎯",label:"权重",value:b.weight||0},{icon:"📅",label:"创建",value:getTimeAgo(b.created)}].forEach(function(item) {
     html += '<div class="modal-stat"><div class="modal-stat-label">' + item.icon + ' ' + item.label + '</div><div class="modal-stat-value">' + item.value + '</div></div>';
   });
   html += '</div>';
 
   html += '<div><div class="modal-importance-label">♥ 重要度</div><div class="modal-importance">' + hearts + '</div></div>';
   html += '<div class="modal-tags">';
-  (b.tags || []).forEach(t => { html += '<span class="modal-tag">#' + t + '</span>'; });
+  (b.tags || []).forEach(function(t) { html += '<span class="modal-tag">#' + t + '</span>'; });
   html += '</div>';
   html += '<div class="modal-id">id: ' + b.id + '</div>';
   html += '</div></div>';
