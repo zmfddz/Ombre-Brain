@@ -210,6 +210,15 @@ function getDomainEmoji(domains) {
   return DOMAIN_EMOJI[domains[0]] || "📦";
 }
 
+function cleanWikilinks(text) {
+  if (!text) return "";
+  return text.replace(/\[\[([^\]]+)\]\]/g, "$1");
+}
+
+function escapeHtml(text) {
+  return text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
 // ---- State ----
 let state = {
   buckets: [],
@@ -218,6 +227,7 @@ let state = {
   error: null,
   filter: "all",
   search: "",
+  sortBy: "weight",
   selectedId: null,
   selectedDetail: null,
   detailLoading: false,
@@ -265,6 +275,7 @@ function closeModal() {
 
 function setFilter(f) { state.filter = f; render(); }
 function setSearch(s) { state.search = s; render(); }
+function setSortBy(s) { state.sortBy = s; render(); }
 
 // ---- Render ----
 function render() {
@@ -287,11 +298,20 @@ function render() {
     return dm && sm;
   });
 
+  // Sort
+  if (state.sortBy === "time") {
+    filtered.sort((a, b) => (b.created_at || "").localeCompare(a.created_at || ""));
+  } else if (state.sortBy === "importance") {
+    filtered.sort((a, b) => (b.importance || 5) - (a.importance || 5));
+  } else {
+    filtered.sort((a, b) => (b.weight || 0) - (a.weight || 0));
+  }
+
   const avgValence = buckets.length > 0
     ? (buckets.reduce((s, b) => s + (b.valence || 0.5), 0) / buckets.length * 100).toFixed(0)
     : 0;
   const milestones = buckets.filter(b => (b.importance || 5) >= 9).length;
-  const daysSinceFirst = Math.max(1, Math.floor((Date.now() - new Date("2026-04-01").getTime()) / 86400000));
+  const daysSinceFirst = Math.max(1, Math.floor((Date.now() - new Date("2026-03-02").getTime()) / 86400000));
 
   let html = '';
 
@@ -323,6 +343,14 @@ function render() {
   allDomains.forEach(d => {
     const emoji = DOMAIN_EMOJI[d] || "📦";
     html += '<button class="filter-btn' + (state.filter === d ? " active" : "") + '" onclick="setFilter(\'' + d + '\')">' + emoji + ' ' + d + '</button>';
+  });
+  html += '</div>';
+
+  // Sort buttons
+  html += '<div class="filters" style="padding-top:8px;gap:6px">';
+  html += '<span style="font-size:11px;color:#c4b5d4">排序：</span>';
+  [["weight","🎯 权重"],["time","🕐 时间"],["importance","♥ 重要度"]].forEach(function(s) {
+    html += '<button class="filter-btn' + (state.sortBy === s[0] ? " active" : "") + '" onclick="setSortBy(\'' + s[0] + '\')" style="padding:5px 12px;font-size:11px">' + s[1] + '</button>';
   });
   html += '</div>';
 
@@ -371,7 +399,7 @@ function render() {
     if (state.detailLoading) {
       html += '<div style="text-align:center;color:#d4c5e0;padding:20px">加载中...</div>';
     } else {
-      html += '<p class="modal-content-text">' + content.replace(/</g, "&lt;").replace(/>/g, "&gt;") + '</p>';
+      html += '<p class="modal-content-text">' + escapeHtml(cleanWikilinks(content)) + '</p>';
     }
     html += '</div>';
 
