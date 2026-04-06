@@ -67,6 +67,12 @@ mcp = FastMCP(
     port=8000,
 )
 
+@mcp.custom_route("/", methods=["GET"])
+async def serve_home(request):
+    from starlette.responses import HTMLResponse
+    html_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "index.html")
+    with open(html_path, "r", encoding="utf-8") as f:
+        return HTMLResponse(f.read())
 
 # =============================================================
 # /health endpoint: lightweight keepalive
