@@ -300,7 +300,7 @@ function render() {
 
   // Sort
   if (state.sortBy === "time") {
-    filtered.sort((a, b) => (b.created_at || "").localeCompare(a.created_at || ""));
+    filtered.sort((a, b) => (b.created || "").localeCompare(a.created || ""));
   } else if (state.sortBy === "importance") {
     filtered.sort((a, b) => (b.importance || 5) - (a.importance || 5));
   } else {
@@ -371,7 +371,7 @@ function render() {
       html += '<h3 class="card-title">' + (b.name || "未命名") + '</h3>';
       html += '<div class="card-footer"><div class="card-tags">';
       tags.forEach(t => { html += '<span class="tag">' + t + '</span>'; });
-      html += '</div><div class="card-meta"><span class="card-hearts">' + hearts + '</span><span class="card-time">' + getTimeAgo(b.created_at) + '</span></div></div>';
+      html += '</div><div class="card-meta"><span class="card-hearts">' + hearts + '</span><span class="card-time">' + getTimeAgo(b.created) + '</span></div></div>';
       html += '</div>';
     });
   }
@@ -404,7 +404,7 @@ function render() {
     html += '</div>';
 
     html += '<div class="modal-stats">';
-    [{icon:"💖",label:"情感效价",value:(b.valence||0.5).toFixed(1)},{icon:"⚡",label:"唤醒度",value:(b.arousal||0.3).toFixed(1)},{icon:"🎯",label:"权重",value:b.weight||0},{icon:"📅",label:"创建",value:getTimeAgo(b.created_at)}].forEach(item => {
+    [{icon:"💖",label:"情感效价",value:(b.valence||0.5).toFixed(1)},{icon:"⚡",label:"唤醒度",value:(b.arousal||0.3).toFixed(1)},{icon:"🎯",label:"权重",value:b.weight||0},{icon:"📅",label:"创建",value:getTimeAgo(b.created)}].forEach(item => {
       html += '<div class="modal-stat"><div class="modal-stat-label">' + item.icon + ' ' + item.label + '</div><div class="modal-stat-value">' + item.value + '</div></div>';
     });
     html += '</div>';
