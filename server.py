@@ -89,6 +89,88 @@ async def health_check(request):
 
 
 # =============================================================
+# REST API endpoints for frontend (fanfan.party)
+# 前端 API 接口
+# =============================================================
+@mcp.custom_route("/api/buckets", methods=["GET"])
+async def api_list_buckets(request):
+    """列出所有记忆桶的摘要信息"""
+    from starlette.responses import JSONResponse
+    try:
+        include_archive = request.query_params.get("archive", "false").lower() == "true"
+        buckets = await bucket_mgr.list_all(include_archive=include_archive)
+        result = []
+        for b in buckets:
+            meta = b.get("metadata", {})
+            score = decay_engine.calculate_score(meta)
+            result.append({
+                "id": b["id"],
+                "name": meta.get("name", "未命名"),
+                "domain": meta.get("domain", []),
+                "valence": meta.get("valence", 0.5),
+                "arousal": meta.get("arousal", 0.3),
+                "importance": meta.get("importance", 5),
+                "tags": meta.get("tags", []),
+                "resolved": meta.get("resolved", False),
+                "type": meta.get("type", "dynamic"),
+                "weight": round(score, 2),
+                "created_at": meta.get("created_at", ""),
+                "updated_at": meta.get("updated_at", ""),
+            })
+        result.sort(key=lambda x: x["weight"], reverse=True)
+        return JSONResponse(result, headers={"Access-Control-Allow-Origin": "*"})
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+@mcp.custom_route("/api/bucket/{bucket_id}", methods=["GET"])
+async def api_get_bucket(request):
+    """获取单条记忆桶的完整内容"""
+    from starlette.responses import JSONResponse
+    bucket_id = request.path_params["bucket_id"]
+    try:
+        bucket = await bucket_mgr.get(bucket_id)
+        if not bucket:
+            return JSONResponse({"error": "未找到"}, status_code=404)
+        meta = bucket.get("metadata", {})
+        score = decay_engine.calculate_score(meta)
+        return JSONResponse({
+            "id": bucket["id"],
+            "content": bucket.get("content", ""),
+            "name": meta.get("name", "未命名"),
+            "domain": meta.get("domain", []),
+            "valence": meta.get("valence", 0.5),
+            "arousal": meta.get("arousal", 0.3),
+            "importance": meta.get("importance", 5),
+            "tags": meta.get("tags", []),
+            "resolved": meta.get("resolved", False),
+            "type": meta.get("type", "dynamic"),
+            "weight": round(score, 2),
+            "created_at": meta.get("created_at", ""),
+            "updated_at": meta.get("updated_at", ""),
+        }, headers={"Access-Control-Allow-Origin": "*"})
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+@mcp.custom_route("/api/stats", methods=["GET"])
+async def api_stats(request):
+    """系统状态"""
+    from starlette.responses import JSONResponse
+    try:
+        stats = await bucket_mgr.get_stats()
+        return JSONResponse({
+            "permanent_count": stats["permanent_count"],
+            "dynamic_count": stats["dynamic_count"],
+            "archive_count": stats["archive_count"],
+            "total_size_kb": stats["total_size_kb"],
+            "decay_running": decay_engine.is_running,
+        }, headers={"Access-Control-Allow-Origin": "*"})
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+# =============================================================
 # Internal helper: merge-or-create
 # 内部辅助：检查是否可合并，可以则合并，否则新建
 # Shared by hold and grow to avoid duplicate logic
@@ -161,7 +243,7 @@ async def breath(
     valence: float = -1,
     arousal: float = -1,
 ) -> str:
-    """检索记忆或浮现未解决记忆。query 为空时自动推送权重最高的未解决桶；有 query 时按关键词+情感检索。domain 逗号分隔，valence/arousal 传 0~1 启用情感共鸣，-1 忽略。"""
+    """检索记忆或浮现未解决记忆。query 为空时自动推送权重最高的未解决桶（每次对话开头用这个）；有 query 时按关键词检索（用关键词而非整句话，更准）。domain 逗号分隔可缩小范围，valence/arousal 传 0~1 启用情感共鸣，-1 忽略。max_results 默认3，需要更多可调大。"""
     await decay_engine.ensure_started()
 
     # --- No args: surfacing mode (weight pool active push) ---
@@ -265,7 +347,7 @@ async def hold(
     tags: str = "",
     importance: int = 5,
 ) -> str:
-    """存储单条记忆。自动打标+合并相似桶。tags 逗号分隔，importance 1-10。"""
+    """存储单条记忆。自动打标+合并相似桶。tags 逗号分隔，importance 1-10（里程碑8-10，日常3-5）。一句话的事用 hold，一大段用 grow。"""
     await decay_engine.ensure_started()
 
     # --- Input validation / 输入校验 ---
@@ -394,7 +476,7 @@ async def trace(
     resolved: int = -1,
     delete: bool = False,
 ) -> str:
-    """修改记忆元数据。resolved=1 标记已解决（桶权重骤降沉底），resolved=0 重新激活，delete=True 删除桶。其余字段只传需改的，-1 或空串表示不改。"""
+    """修改记忆元数据。bucket_id 通过 pulse 查看。resolved=1 标记已解决（桶权重骤降沉底），resolved=0 重新激活，delete=True 删除桶。其余字段只传需改的，-1 或空串表示不改。"""
 
     if not bucket_id or not bucket_id.strip():
         return "请提供有效的 bucket_id。"
@@ -449,7 +531,7 @@ async def trace(
 # =============================================================
 @mcp.tool()
 async def pulse(include_archive: bool = False) -> str:
-    """系统状态和所有记忆桶摘要。include_archive=True 时包含归档桶。"""
+    """系统状态和所有记忆桶摘要（含 bucket_id，供 trace 使用）。include_archive=True 时包含归档桶。"""
     try:
         stats = await bucket_mgr.get_stats()
     except Exception as e:
@@ -494,6 +576,7 @@ async def pulse(include_archive: bool = False) -> str:
         resolved_tag = " [已解决]" if meta.get("resolved", False) else ""
         lines.append(
             f"{icon} [{meta.get('name', b['id'])}]{resolved_tag} "
+            f"id:{b['id']} "
             f"主题:{domains} "
             f"情感:V{val:.1f}/A{aro:.1f} "
             f"重要:{meta.get('importance', '?')} "
