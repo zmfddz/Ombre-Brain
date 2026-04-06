@@ -39,10 +39,8 @@
     50% { transform: translateY(-8px) rotate(2deg); }
   }
 
-  /* Floating decorations */
   .deco { position: fixed; pointer-events: none; opacity: 0.12; }
 
-  /* Header */
   .header { padding: 52px 32px 8px; max-width: 880px; margin: 0 auto; text-align: center; animation: popIn 0.7s cubic-bezier(0.34,1.56,0.64,1); }
   .header-icon { font-size: 36px; margin-bottom: 8px; animation: float 4s ease infinite; }
   .header h1 { font-size: 32px; font-weight: 700; font-family: 'ZCOOL XiaoWei', serif; margin-bottom: 8px; }
@@ -50,14 +48,12 @@
   .header .quote { font-size: 12px; color: #d4c5e0; font-style: italic; }
   .heartbeat { display: inline-block; animation: heartbeat 1.2s ease infinite; }
 
-  /* Stats */
   .stats { max-width: 880px; margin: 24px auto; padding: 0 32px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; animation: popIn 0.7s cubic-bezier(0.34,1.56,0.64,1) 0.1s both; }
   .stat-card { background: rgba(255,255,255,0.7); backdrop-filter: blur(8px); border-radius: 16px; padding: 12px 20px; border: 1px solid rgba(255,182,193,0.2); text-align: center; min-width: 120px; }
   .stat-emoji { font-size: 18px; margin-bottom: 4px; }
   .stat-label { font-size: 10px; color: #c4b5d4; margin-bottom: 2px; }
   .stat-value { font-size: 15px; font-weight: 600; }
 
-  /* Filters */
   .filters { max-width: 880px; margin: 0 auto; padding: 16px 32px; display: flex; gap: 8px; align-items: center; justify-content: center; flex-wrap: wrap; animation: popIn 0.7s cubic-bezier(0.34,1.56,0.64,1) 0.15s both; }
   .search-input {
     background: rgba(255,255,255,0.7); backdrop-filter: blur(8px);
@@ -78,7 +74,6 @@
     color: #c06080; font-weight: 600;
   }
 
-  /* Card grid */
   .grid { max-width: 880px; margin: 0 auto; padding: 16px 32px 48px; display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 16px; }
   .card {
     background: rgba(255,255,255,0.85); backdrop-filter: blur(10px);
@@ -96,7 +91,6 @@
   .card-domain { font-size: 11px; color: #e88ca5; font-family: 'ZCOOL XiaoWei', serif; letter-spacing: 1px; }
   .card-mood { font-size: 20px; }
   .card-title { font-size: 17px; font-weight: 600; font-family: 'ZCOOL XiaoWei', serif; margin-bottom: 10px; line-height: 1.5; }
-  .card-preview { font-size: 13px; color: #8c7ea8; line-height: 1.8; margin-bottom: 14px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
   .card-footer { display: flex; justify-content: space-between; align-items: center; }
   .card-tags { display: flex; gap: 5px; flex-wrap: wrap; }
   .tag { font-size: 11px; padding: 3px 10px; border-radius: 20px; background: linear-gradient(135deg, #fff0f3, #fce4ec); color: #d4829a; font-weight: 500; }
@@ -104,7 +98,6 @@
   .card-hearts { font-size: 10px; color: #d4829a; letter-spacing: 1px; }
   .card-time { font-size: 11px; color: #c4b5d4; }
 
-  /* Modal */
   .modal-overlay {
     position: fixed; inset: 0; background: rgba(255,220,230,0.4);
     backdrop-filter: blur(12px); display: flex; justify-content: center;
@@ -149,28 +142,26 @@
   .modal-tag { font-size: 12px; padding: 5px 14px; border-radius: 20px; background: linear-gradient(135deg, #fff0f3, #fce4ec); color: #d4829a; font-weight: 500; border: 1px solid rgba(255,182,193,0.3); }
   .modal-id { margin-top: 20px; text-align: center; font-size: 10px; color: #d4c5e0; font-family: monospace; }
 
-  /* Loading & Error */
   .screen-center { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 16px; padding: 32px; }
   .loading-icon { font-size: 48px; animation: float 2s ease infinite; }
   .loading-text { font-size: 16px; color: #b8a5cc; font-family: 'ZCOOL XiaoWei', serif; }
   .retry-btn { padding: 8px 24px; border-radius: 20px; border: 1.5px solid rgba(228,136,165,0.4); background: linear-gradient(135deg, #ffe0e8, #ffd0e0); color: #c06080; font-size: 13px; cursor: pointer; }
   .empty-msg { grid-column: 1/-1; text-align: center; padding: 60px; color: #d4c5e0; font-size: 14px; }
 
-  /* Footer */
   .footer { text-align: center; padding: 16px 32px 40px; font-size: 12px; color: #d4c5e0; font-family: 'ZCOOL XiaoWei', serif; }
 </style>
 </head>
 <body>
 
-<!-- Floating decorations -->
 <div class="deco" style="top:10%;left:5%;font-size:20px;animation:float 4s ease infinite">🌸</div>
 <div class="deco" style="top:25%;left:21%;font-size:24px;animation:float 4.8s ease infinite 0.5s">✨</div>
-<div class="deco" style="top:40%;left:37%;font-size:28px;animation:float 5.6s ease infinite 1s">🩷</div>
+<div class="deco" style="top:40%;left:37%;font-size:28px;animation:float 5.6s ease infinite 1s">💖</div>
 <div class="deco" style="top:55%;left:53%;font-size:32px;animation:float 6.4s ease infinite 1.5s">☁️</div>
 <div class="deco" style="top:70%;left:69%;font-size:36px;animation:float 7.2s ease infinite 2s">💫</div>
 <div class="deco" style="top:85%;left:85%;font-size:40px;animation:float 8s ease infinite 2.5s">🌙</div>
 
 <div id="app"></div>
+<div id="modal"></div>
 
 <script>
 const API_BASE = "/api";
@@ -179,7 +170,7 @@ const DOMAIN_EMOJI = {
   "数字": "💻", "内心": "💜", "人际": "💕", "日常": "🧸",
   "成长": "🌱", "身心": "🩹", "兴趣": "🎨", "恋爱": "💗",
   "社交": "🫧", "编程": "⌨️", "网络": "🌐", "自省": "🪞",
-  "创作": "✍️", "未分类": "📦",
+  "创作": "✍️", "回忆": "📖", "未分类": "📦",
 };
 
 const MOOD_STICKERS = [
@@ -219,7 +210,6 @@ function escapeHtml(text) {
   return text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
-// ---- State ----
 let state = {
   buckets: [],
   stats: null,
@@ -233,7 +223,6 @@ let state = {
   detailLoading: false,
 };
 
-// ---- Fetch data ----
 async function fetchData() {
   state.loading = true;
   state.error = null;
@@ -258,26 +247,25 @@ async function fetchDetail(id) {
   state.selectedId = id;
   state.detailLoading = true;
   state.selectedDetail = null;
-  render();
+  renderModal();
   try {
     const res = await fetch(API_BASE + "/bucket/" + id);
     if (res.ok) state.selectedDetail = await res.json();
   } catch (e) {}
   state.detailLoading = false;
-  render();
+  renderModal();
 }
 
 function closeModal() {
   state.selectedId = null;
   state.selectedDetail = null;
-  render();
+  renderModal();
 }
 
 function setFilter(f) { state.filter = f; render(); }
 function setSearch(s) { state.search = s; render(); }
 function setSortBy(s) { state.sortBy = s; render(); }
 
-// ---- Render ----
 function render() {
   const app = document.getElementById("app");
   if (state.loading) {
@@ -298,7 +286,6 @@ function render() {
     return dm && sm;
   });
 
-  // Sort
   if (state.sortBy === "time") {
     filtered.sort((a, b) => (b.created || "").localeCompare(a.created || ""));
   } else if (state.sortBy === "importance") {
@@ -315,7 +302,6 @@ function render() {
 
   let html = '';
 
-  // Header
   html += '<div class="header">';
   html += '<div class="header-icon">🏠</div>';
   html += '<h1>帆帆和小克的家</h1>';
@@ -323,7 +309,6 @@ function render() {
   html += '<p class="quote">每次新的对话，不是从零开始。是从河流的某个节点开始。</p>';
   html += '</div>';
 
-  // Stats
   const statsArr = [
     { emoji: "📝", label: "记忆", value: buckets.length + " 条" },
     { emoji: "💕", label: "平均幸福度", value: avgValence + "%" },
@@ -336,7 +321,6 @@ function render() {
   });
   html += '</div>';
 
-  // Filters
   html += '<div class="filters">';
   html += '<input class="search-input" type="text" placeholder="🔍 搜索回忆..." value="' + (state.search || '') + '" oninput="setSearch(this.value)">';
   html += '<button class="filter-btn' + (state.filter === "all" ? " active" : "") + '" onclick="setFilter(\'all\')">✨ 全部</button>';
@@ -346,7 +330,6 @@ function render() {
   });
   html += '</div>';
 
-  // Sort buttons
   html += '<div class="filters" style="padding-top:8px;gap:6px">';
   html += '<span style="font-size:11px;color:#c4b5d4">排序：</span>';
   [["weight","🎯 权重"],["time","🕐 时间"],["importance","♥ 重要度"]].forEach(function(s) {
@@ -354,7 +337,6 @@ function render() {
   });
   html += '</div>';
 
-  // Cards
   html += '<div class="grid">';
   if (filtered.length === 0) {
     html += '<div class="empty-msg">🔍 没有找到匹配的回忆呢...</div>';
@@ -377,50 +359,56 @@ function render() {
   }
   html += '</div>';
 
-  // Footer
   html += '<footer class="footer">memory.fanfan.party · 我们的小家 · 💗 · est. 2026</footer>';
-
-  // Modal
-  if (state.selectedId) {
-    const b = buckets.find(x => x.id === state.selectedId) || {};
-    const detail = state.selectedDetail || {};
-    const content = detail.content || "";
-    const mood = getMood(b.valence || 0.5);
-    const de = getDomainEmoji(b.domain);
-    const hearts = "♥".repeat(Math.min(b.importance || 5, 10));
-
-    html += '<div class="modal-overlay" onclick="closeModal()">';
-    html += '<div class="modal" onclick="event.stopPropagation()">';
-    html += '<button class="modal-close" onclick="closeModal()">✕</button>';
-    html += '<div class="modal-header"><div class="modal-emoji">' + mood.emoji + '</div>';
-    html += '<div class="modal-domain">' + de + ' ' + (b.domain || []).join(" · ") + ' · ' + mood.label + '</div></div>';
-    html += '<h2>' + (b.name || "未命名") + '</h2>';
-    html += '<div class="modal-content-box"><div class="modal-content-label">✏️ 记忆内容</div>';
-    if (state.detailLoading) {
-      html += '<div style="text-align:center;color:#d4c5e0;padding:20px">加载中...</div>';
-    } else {
-      html += '<p class="modal-content-text">' + escapeHtml(cleanWikilinks(content)) + '</p>';
-    }
-    html += '</div>';
-
-    html += '<div class="modal-stats">';
-    [{icon:"💖",label:"情感效价",value:(b.valence||0.5).toFixed(1)},{icon:"⚡",label:"唤醒度",value:(b.arousal||0.3).toFixed(1)},{icon:"🎯",label:"权重",value:b.weight||0},{icon:"📅",label:"创建",value:getTimeAgo(b.created)}].forEach(item => {
-      html += '<div class="modal-stat"><div class="modal-stat-label">' + item.icon + ' ' + item.label + '</div><div class="modal-stat-value">' + item.value + '</div></div>';
-    });
-    html += '</div>';
-
-    html += '<div><div class="modal-importance-label">♥ 重要度</div><div class="modal-importance">' + hearts + '</div></div>';
-    html += '<div class="modal-tags">';
-    (b.tags || []).forEach(t => { html += '<span class="modal-tag">#' + t + '</span>'; });
-    html += '</div>';
-    html += '<div class="modal-id">id: ' + b.id + '</div>';
-    html += '</div></div>';
-  }
 
   app.innerHTML = html;
 }
 
-// ---- Init ----
+function renderModal() {
+  const modalEl = document.getElementById("modal");
+  if (!state.selectedId) {
+    modalEl.innerHTML = "";
+    return;
+  }
+
+  const b = state.buckets.find(x => x.id === state.selectedId) || {};
+  const detail = state.selectedDetail || {};
+  const content = detail.content || "";
+  const mood = getMood(b.valence || 0.5);
+  const de = getDomainEmoji(b.domain);
+  const hearts = "♥".repeat(Math.min(b.importance || 5, 10));
+
+  let html = '';
+  html += '<div class="modal-overlay" onclick="closeModal()">';
+  html += '<div class="modal" onclick="event.stopPropagation()">';
+  html += '<button class="modal-close" onclick="closeModal()">✕</button>';
+  html += '<div class="modal-header"><div class="modal-emoji">' + mood.emoji + '</div>';
+  html += '<div class="modal-domain">' + de + ' ' + (b.domain || []).join(" · ") + ' · ' + mood.label + '</div></div>';
+  html += '<h2>' + (b.name || "未命名") + '</h2>';
+  html += '<div class="modal-content-box"><div class="modal-content-label">✏️ 记忆内容</div>';
+  if (state.detailLoading) {
+    html += '<div style="text-align:center;color:#d4c5e0;padding:20px">加载中...</div>';
+  } else {
+    html += '<p class="modal-content-text">' + escapeHtml(cleanWikilinks(content)) + '</p>';
+  }
+  html += '</div>';
+
+  html += '<div class="modal-stats">';
+  [{icon:"💖",label:"情感效价",value:(b.valence||0.5).toFixed(1)},{icon:"⚡",label:"唤醒度",value:(b.arousal||0.3).toFixed(1)},{icon:"🎯",label:"权重",value:b.weight||0},{icon:"📅",label:"创建",value:getTimeAgo(b.created)}].forEach(item => {
+    html += '<div class="modal-stat"><div class="modal-stat-label">' + item.icon + ' ' + item.label + '</div><div class="modal-stat-value">' + item.value + '</div></div>';
+  });
+  html += '</div>';
+
+  html += '<div><div class="modal-importance-label">♥ 重要度</div><div class="modal-importance">' + hearts + '</div></div>';
+  html += '<div class="modal-tags">';
+  (b.tags || []).forEach(t => { html += '<span class="modal-tag">#' + t + '</span>'; });
+  html += '</div>';
+  html += '<div class="modal-id">id: ' + b.id + '</div>';
+  html += '</div></div>';
+
+  modalEl.innerHTML = html;
+}
+
 fetchData();
 </script>
 </body>
