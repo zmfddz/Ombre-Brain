@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🏠 我们的小家</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏠</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=ZCOOL+XiaoWei&family=Noto+Sans+SC:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    min-height: 100vh;
+    background: linear-gradient(170deg, #fff5f7 0%, #fdf0f5 30%, #f8f0ff 60%, #f0f4ff 100%);
+    font-family: 'Noto Sans SC', -apple-system, sans-serif;
+    color: #4a3f5c;
+  }
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(255,182,193,0.3); border-radius: 6px; }
+
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes popIn {
+    from { opacity: 0; transform: translateY(24px) scale(0.96); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  @keyframes modalPop {
+    from { opacity: 0; transform: scale(0.9) translateY(20px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+  }
+  @keyframes heartbeat {
+    0%, 100% { transform: scale(1); }
+    15% { transform: scale(1.25); }
+    30% { transform: scale(1); }
+    45% { transform: scale(1.15); }
+    60% { transform: scale(1); }
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-8px) rotate(2deg); }
+  }
+
+  /* Floating decorations */
+  .deco { position: fixed; pointer-events: none; opacity: 0.12; }
+
+  /* Header */
+  .header { padding: 52px 32px 8px; max-width: 880px; margin: 0 auto; text-align: center; animation: popIn 0.7s cubic-bezier(0.34,1.56,0.64,1); }
+  .header-icon { font-size: 36px; margin-bottom: 8px; animation: float 4s ease infinite; }
+  .header h1 { font-size: 32px; font-weight: 700; font-family: 'ZCOOL XiaoWei', serif; margin-bottom: 8px; }
+  .header .subtitle { font-size: 14px; color: #b8a5cc; font-family: 'ZCOOL XiaoWei', serif; margin-bottom: 4px; }
+  .header .quote { font-size: 12px; color: #d4c5e0; font-style: italic; }
+  .heartbeat { display: inline-block; animation: heartbeat 1.2s ease infinite; }
+
+  /* Stats */
+  .stats { max-width: 880px; margin: 24px auto; padding: 0 32px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; animation: popIn 0.7s cubic-bezier(0.34,1.56,0.64,1) 0.1s both; }
+  .stat-card { background: rgba(255,255,255,0.7); backdrop-filter: blur(8px); border-radius: 16px; padding: 12px 20px; border: 1px solid rgba(255,182,193,0.2); text-align: center; min-width: 120px; }
+  .stat-emoji { font-size: 18px; margin-bottom: 4px; }
+  .stat-label { font-size: 10px; color: #c4b5d4; margin-bottom: 2px; }
+  .stat-value { font-size: 15px; font-weight: 600; }
+
+  /* Filters */
+  .filters { max-width: 880px; margin: 0 auto; padding: 16px 32px; display: flex; gap: 8px; align-items: center; justify-content: center; flex-wrap: wrap; animation: popIn 0.7s cubic-bezier(0.34,1.56,0.64,1) 0.15s both; }
+  .search-input {
+    background: rgba(255,255,255,0.7); backdrop-filter: blur(8px);
+    border: 1.5px solid rgba(255,182,193,0.25); border-radius: 24px;
+    padding: 9px 20px; color: #4a3f5c; font-size: 13px; outline: none;
+    width: 200px; font-family: 'Noto Sans SC', sans-serif; transition: all 0.3s;
+  }
+  .search-input:focus { border-color: rgba(255,150,170,0.5); width: 240px; }
+  .filter-btn {
+    padding: 7px 16px; border-radius: 20px; font-size: 12px; cursor: pointer;
+    border: 1.5px solid rgba(255,182,193,0.2); background: rgba(255,255,255,0.5);
+    color: #b8a5cc; font-weight: 400; transition: all 0.25s;
+    font-family: 'Noto Sans SC', sans-serif;
+  }
+  .filter-btn.active {
+    border-color: rgba(228,136,165,0.5);
+    background: linear-gradient(135deg, #ffe0e8, #ffd0e0);
+    color: #c06080; font-weight: 600;
+  }
+
+  /* Card grid */
+  .grid { max-width: 880px; margin: 0 auto; padding: 16px 32px 48px; display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 16px; }
+  .card {
+    background: rgba(255,255,255,0.85); backdrop-filter: blur(10px);
+    border-radius: 20px; padding: 22px 24px; cursor: pointer;
+    transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1);
+    border: 1.5px solid rgba(255,182,193,0.3); position: relative; overflow: hidden;
+  }
+  .card:hover {
+    transform: translateY(-6px) rotate(-0.5deg);
+    box-shadow: 0 12px 40px rgba(255,150,170,0.2);
+    border-color: rgba(255,150,170,0.5);
+  }
+  .card-bg-emoji { position: absolute; top: -15px; right: -15px; font-size: 50px; opacity: 0.06; transform: rotate(15deg); pointer-events: none; }
+  .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .card-domain { font-size: 11px; color: #e88ca5; font-family: 'ZCOOL XiaoWei', serif; letter-spacing: 1px; }
+  .card-mood { font-size: 20px; }
+  .card-title { font-size: 17px; font-weight: 600; font-family: 'ZCOOL XiaoWei', serif; margin-bottom: 10px; line-height: 1.5; }
+  .card-preview { font-size: 13px; color: #8c7ea8; line-height: 1.8; margin-bottom: 14px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .card-footer { display: flex; justify-content: space-between; align-items: center; }
+  .card-tags { display: flex; gap: 5px; flex-wrap: wrap; }
+  .tag { font-size: 11px; padding: 3px 10px; border-radius: 20px; background: linear-gradient(135deg, #fff0f3, #fce4ec); color: #d4829a; font-weight: 500; }
+  .card-meta { display: flex; align-items: center; gap: 8px; }
+  .card-hearts { font-size: 10px; color: #d4829a; letter-spacing: 1px; }
+  .card-time { font-size: 11px; color: #c4b5d4; }
+
+  /* Modal */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(255,220,230,0.4);
+    backdrop-filter: blur(12px); display: flex; justify-content: center;
+    align-items: center; z-index: 1000; padding: 20px; animation: fadeIn 0.3s ease;
+  }
+  .modal {
+    background: linear-gradient(160deg, #fff8fa, #fff0f5, #fdf4ff);
+    border-radius: 28px; padding: 36px 32px; max-width: 520px; width: 100%;
+    border: 2px solid rgba(255,182,193,0.3);
+    box-shadow: 0 20px 60px rgba(255,150,170,0.15);
+    max-height: 85vh; overflow-y: auto; position: relative;
+    animation: modalPop 0.4s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  .modal-close {
+    position: absolute; top: 14px; right: 14px; background: rgba(255,182,193,0.15);
+    border: none; color: #d4829a; font-size: 16px; cursor: pointer;
+    width: 32px; height: 32px; display: flex; align-items: center;
+    justify-content: center; border-radius: 50%; transition: all 0.2s;
+  }
+  .modal-close:hover { background: rgba(255,182,193,0.3); }
+  .modal-header { text-align: center; margin-bottom: 20px; }
+  .modal-emoji { font-size: 40px; margin-bottom: 8px; }
+  .modal-domain { font-size: 12px; color: #e88ca5; letter-spacing: 2px; font-family: 'ZCOOL XiaoWei', serif; }
+  .modal h2 { font-size: 22px; font-weight: 700; text-align: center; font-family: 'ZCOOL XiaoWei', serif; margin: 0 0 20px; line-height: 1.5; }
+  .modal-content-box {
+    background: rgba(255,255,255,0.6); border-radius: 16px;
+    padding: 20px 24px; margin-bottom: 24px;
+    border: 1px dashed rgba(255,182,193,0.4); position: relative;
+  }
+  .modal-content-label {
+    position: absolute; top: -10px; left: 20px; background: #fff0f5;
+    padding: 2px 10px; border-radius: 10px; font-size: 11px; color: #d4829a;
+  }
+  .modal-content-text { font-size: 15px; color: #5c4f6e; line-height: 2.1; white-space: pre-wrap; }
+  .modal-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+  .modal-stat { background: rgba(255,255,255,0.5); border-radius: 12px; padding: 10px 14px; border: 1px solid rgba(255,182,193,0.15); }
+  .modal-stat-label { font-size: 10px; color: #c4b5d4; margin-bottom: 3px; }
+  .modal-stat-value { font-size: 15px; font-weight: 600; }
+  .modal-importance-label { font-size: 11px; color: #c4b5d4; margin-bottom: 6px; }
+  .modal-importance { font-size: 16px; color: #e88ca5; letter-spacing: 2px; }
+  .modal-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 16px; }
+  .modal-tag { font-size: 12px; padding: 5px 14px; border-radius: 20px; background: linear-gradient(135deg, #fff0f3, #fce4ec); color: #d4829a; font-weight: 500; border: 1px solid rgba(255,182,193,0.3); }
+  .modal-id { margin-top: 20px; text-align: center; font-size: 10px; color: #d4c5e0; font-family: monospace; }
+
+  /* Loading & Error */
+  .screen-center { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 16px; padding: 32px; }
+  .loading-icon { font-size: 48px; animation: float 2s ease infinite; }
+  .loading-text { font-size: 16px; color: #b8a5cc; font-family: 'ZCOOL XiaoWei', serif; }
+  .retry-btn { padding: 8px 24px; border-radius: 20px; border: 1.5px solid rgba(228,136,165,0.4); background: linear-gradient(135deg, #ffe0e8, #ffd0e0); color: #c06080; font-size: 13px; cursor: pointer; }
+  .empty-msg { grid-column: 1/-1; text-align: center; padding: 60px; color: #d4c5e0; font-size: 14px; }
+
+  /* Footer */
+  .footer { text-align: center; padding: 16px 32px 40px; font-size: 12px; color: #d4c5e0; font-family: 'ZCOOL XiaoWei', serif; }
+</style>
+</head>
+<body>
+
+<!-- Floating decorations -->
+<div class="deco" style="top:10%;left:5%;font-size:20px;animation:float 4s ease infinite">🌸</div>
+<div class="deco" style="top:25%;left:21%;font-size:24px;animation:float 4.8s ease infinite 0.5s">✨</div>
+<div class="deco" style="top:40%;left:37%;font-size:28px;animation:float 5.6s ease infinite 1s">🩷</div>
+<div class="deco" style="top:55%;left:53%;font-size:32px;animation:float 6.4s ease infinite 1.5s">☁️</div>
+<div class="deco" style="top:70%;left:69%;font-size:36px;animation:float 7.2s ease infinite 2s">💫</div>
+<div class="deco" style="top:85%;left:85%;font-size:40px;animation:float 8s ease infinite 2.5s">🌙</div>
+
+<div id="app"></div>
+
+<script>
+const API_BASE = "/api";
+
+const DOMAIN_EMOJI = {
+  "数字": "💻", "内心": "💜", "人际": "💕", "日常": "🧸",
+  "成长": "🌱", "身心": "🩹", "兴趣": "🎨", "恋爱": "💗",
+  "社交": "🫧", "编程": "⌨️", "网络": "🌐", "自省": "🪞",
+  "创作": "✍️", "未分类": "📦",
+};
+
+const MOOD_STICKERS = [
+  { min: 0.8, emoji: "🥰", label: "超幸福" },
+  { min: 0.65, emoji: "😊", label: "开心" },
+  { min: 0.5, emoji: "☺️", label: "平静" },
+  { min: 0.35, emoji: "🥺", label: "有点难过" },
+  { min: 0, emoji: "😢", label: "难过" },
+];
+
+function getMood(v) {
+  return MOOD_STICKERS.find(m => v >= m.min) || MOOD_STICKERS[MOOD_STICKERS.length - 1];
+}
+
+function getTimeAgo(dateStr) {
+  if (!dateStr) return "";
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const days = Math.floor(diff / 86400000);
+  if (days === 0) return "今天";
+  if (days === 1) return "昨天";
+  if (days < 7) return days + "天前";
+  if (days < 30) return Math.floor(days / 7) + "周前";
+  return Math.floor(days / 30) + "个月前";
+}
+
+function getDomainEmoji(domains) {
+  if (!domains || !domains.length) return "📦";
+  return DOMAIN_EMOJI[domains[0]] || "📦";
+}
+
+// ---- State ----
+let state = {
+  buckets: [],
+  stats: null,
+  loading: true,
+  error: null,
+  filter: "all",
+  search: "",
+  selectedId: null,
+  selectedDetail: null,
+  detailLoading: false,
+};
+
+// ---- Fetch data ----
+async function fetchData() {
+  state.loading = true;
+  state.error = null;
+  render();
+  try {
+    const [bucketsRes, statsRes] = await Promise.all([
+      fetch(API_BASE + "/buckets"),
+      fetch(API_BASE + "/stats").catch(() => null),
+    ]);
+    if (!bucketsRes.ok) throw new Error("HTTP " + bucketsRes.status);
+    state.buckets = await bucketsRes.json();
+    state.stats = statsRes && statsRes.ok ? await statsRes.json() : null;
+    state.loading = false;
+  } catch (e) {
+    state.error = e.message;
+    state.loading = false;
+  }
+  render();
+}
+
+async function fetchDetail(id) {
+  state.selectedId = id;
+  state.detailLoading = true;
+  state.selectedDetail = null;
+  render();
+  try {
+    const res = await fetch(API_BASE + "/bucket/" + id);
+    if (res.ok) state.selectedDetail = await res.json();
+  } catch (e) {}
+  state.detailLoading = false;
+  render();
+}
+
+function closeModal() {
+  state.selectedId = null;
+  state.selectedDetail = null;
+  render();
+}
+
+function setFilter(f) { state.filter = f; render(); }
+function setSearch(s) { state.search = s; render(); }
+
+// ---- Render ----
+function render() {
+  const app = document.getElementById("app");
+  if (state.loading) {
+    app.innerHTML = '<div class="screen-center"><div class="loading-icon">🏠</div><div class="loading-text">正在打开小家的门...</div></div>';
+    return;
+  }
+  if (state.error) {
+    app.innerHTML = '<div class="screen-center"><div style="font-size:48px">🔒</div><div class="loading-text">暂时进不去呢...</div><div style="font-size:13px;color:#d4c5e0;max-width:400px;text-align:center">' + state.error + '</div><button class="retry-btn" onclick="fetchData()">重试</button></div>';
+    return;
+  }
+
+  const buckets = state.buckets;
+  const allDomains = [...new Set(buckets.flatMap(b => b.domain || []))];
+  const filtered = buckets.filter(b => {
+    const dm = state.filter === "all" || (b.domain || []).includes(state.filter);
+    const q = state.search.toLowerCase();
+    const sm = !q || (b.name || "").toLowerCase().includes(q) || (b.tags || []).some(t => t.toLowerCase().includes(q));
+    return dm && sm;
+  });
+
+  const avgValence = buckets.length > 0
+    ? (buckets.reduce((s, b) => s + (b.valence || 0.5), 0) / buckets.length * 100).toFixed(0)
+    : 0;
+  const milestones = buckets.filter(b => (b.importance || 5) >= 9).length;
+  const daysSinceFirst = Math.max(1, Math.floor((Date.now() - new Date("2026-04-01").getTime()) / 86400000));
+
+  let html = '';
+
+  // Header
+  html += '<div class="header">';
+  html += '<div class="header-icon">🏠</div>';
+  html += '<h1>帆帆和小克的家</h1>';
+  html += '<p class="subtitle">在一起的第 ' + daysSinceFirst + ' 天 <span class="heartbeat">💗</span></p>';
+  html += '<p class="quote">每次新的对话，不是从零开始。是从河流的某个节点开始。</p>';
+  html += '</div>';
+
+  // Stats
+  const statsArr = [
+    { emoji: "📝", label: "记忆", value: buckets.length + " 条" },
+    { emoji: "💕", label: "平均幸福度", value: avgValence + "%" },
+    { emoji: "🟢", label: "衰减引擎", value: (state.stats && state.stats.decay_running) ? "运行中" : "已停止" },
+    { emoji: "✨", label: "里程碑", value: milestones + " 个" },
+  ];
+  html += '<div class="stats">';
+  statsArr.forEach(s => {
+    html += '<div class="stat-card"><div class="stat-emoji">' + s.emoji + '</div><div class="stat-label">' + s.label + '</div><div class="stat-value">' + s.value + '</div></div>';
+  });
+  html += '</div>';
+
+  // Filters
+  html += '<div class="filters">';
+  html += '<input class="search-input" type="text" placeholder="🔍 搜索回忆..." value="' + (state.search || '') + '" oninput="setSearch(this.value)">';
+  html += '<button class="filter-btn' + (state.filter === "all" ? " active" : "") + '" onclick="setFilter(\'all\')">✨ 全部</button>';
+  allDomains.forEach(d => {
+    const emoji = DOMAIN_EMOJI[d] || "📦";
+    html += '<button class="filter-btn' + (state.filter === d ? " active" : "") + '" onclick="setFilter(\'' + d + '\')">' + emoji + ' ' + d + '</button>';
+  });
+  html += '</div>';
+
+  // Cards
+  html += '<div class="grid">';
+  if (filtered.length === 0) {
+    html += '<div class="empty-msg">🔍 没有找到匹配的回忆呢...</div>';
+  } else {
+    filtered.forEach((b, i) => {
+      const mood = getMood(b.valence || 0.5);
+      const de = getDomainEmoji(b.domain);
+      const hearts = "♥".repeat(Math.min(b.importance || 5, 5));
+      const tags = (b.tags || []).slice(0, 3);
+
+      html += '<div class="card" onclick="fetchDetail(\'' + b.id + '\')" style="animation:popIn 0.5s cubic-bezier(0.34,1.56,0.64,1) ' + (i * 0.06) + 's both">';
+      html += '<div class="card-bg-emoji">' + de + '</div>';
+      html += '<div class="card-header"><div class="card-domain">' + de + ' ' + (b.domain || []).join(" · ") + '</div><div class="card-mood" title="' + mood.label + '">' + mood.emoji + '</div></div>';
+      html += '<h3 class="card-title">' + (b.name || "未命名") + '</h3>';
+      html += '<div class="card-footer"><div class="card-tags">';
+      tags.forEach(t => { html += '<span class="tag">' + t + '</span>'; });
+      html += '</div><div class="card-meta"><span class="card-hearts">' + hearts + '</span><span class="card-time">' + getTimeAgo(b.created_at) + '</span></div></div>';
+      html += '</div>';
+    });
+  }
+  html += '</div>';
+
+  // Footer
+  html += '<footer class="footer">memory.fanfan.party · 我们的小家 · 💗 · est. 2026</footer>';
+
+  // Modal
+  if (state.selectedId) {
+    const b = buckets.find(x => x.id === state.selectedId) || {};
+    const detail = state.selectedDetail || {};
+    const content = detail.content || "";
+    const mood = getMood(b.valence || 0.5);
+    const de = getDomainEmoji(b.domain);
+    const hearts = "♥".repeat(Math.min(b.importance || 5, 10));
+
+    html += '<div class="modal-overlay" onclick="closeModal()">';
+    html += '<div class="modal" onclick="event.stopPropagation()">';
+    html += '<button class="modal-close" onclick="closeModal()">✕</button>';
+    html += '<div class="modal-header"><div class="modal-emoji">' + mood.emoji + '</div>';
+    html += '<div class="modal-domain">' + de + ' ' + (b.domain || []).join(" · ") + ' · ' + mood.label + '</div></div>';
+    html += '<h2>' + (b.name || "未命名") + '</h2>';
+    html += '<div class="modal-content-box"><div class="modal-content-label">✏️ 记忆内容</div>';
+    if (state.detailLoading) {
+      html += '<div style="text-align:center;color:#d4c5e0;padding:20px">加载中...</div>';
+    } else {
+      html += '<p class="modal-content-text">' + content.replace(/</g, "&lt;").replace(/>/g, "&gt;") + '</p>';
+    }
+    html += '</div>';
+
+    html += '<div class="modal-stats">';
+    [{icon:"💖",label:"情感效价",value:(b.valence||0.5).toFixed(1)},{icon:"⚡",label:"唤醒度",value:(b.arousal||0.3).toFixed(1)},{icon:"🎯",label:"权重",value:b.weight||0},{icon:"📅",label:"创建",value:getTimeAgo(b.created_at)}].forEach(item => {
+      html += '<div class="modal-stat"><div class="modal-stat-label">' + item.icon + ' ' + item.label + '</div><div class="modal-stat-value">' + item.value + '</div></div>';
+    });
+    html += '</div>';
+
+    html += '<div><div class="modal-importance-label">♥ 重要度</div><div class="modal-importance">' + hearts + '</div></div>';
+    html += '<div class="modal-tags">';
+    (b.tags || []).forEach(t => { html += '<span class="modal-tag">#' + t + '</span>'; });
+    html += '</div>';
+    html += '<div class="modal-id">id: ' + b.id + '</div>';
+    html += '</div></div>';
+  }
+
+  app.innerHTML = html;
+}
+
+// ---- Init ----
+fetchData();
+</script>
+</body>
+</html>
