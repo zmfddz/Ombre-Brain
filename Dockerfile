@@ -15,10 +15,15 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy project files / 复制项目文件
+# Backend code + config / 后端代码 + 配置
 COPY *.py .
+COPY config.yaml .
+
+# Frontend assets (memory-garden) / 前端资源
 COPY index.html .
-COPY config.example.yaml ./config.yaml
+COPY index_legacy.html .
+COPY tweaks-panel.jsx .
+COPY js/ ./js/
 
 # Persistent mount point: bucket data from host
 # 持久化挂载点：记忆数据从宿主机挂进来
