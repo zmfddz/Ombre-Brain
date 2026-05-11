@@ -69,10 +69,65 @@ mcp = FastMCP(
 
 @mcp.custom_route("/", methods=["GET"])
 async def serve_home(request):
+    """记忆花园首页(memory-garden 前端)"""
     from starlette.responses import HTMLResponse
     html_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "index.html")
     with open(html_path, "r", encoding="utf-8") as f:
         return HTMLResponse(f.read())
+
+
+@mcp.custom_route("/legacy", methods=["GET"])
+async def serve_legacy_home(request):
+    """老版 landing 页(我们的小家),保留访问入口便于回退"""
+    from starlette.responses import HTMLResponse
+    html_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "index_legacy.html")
+    if not os.path.isfile(html_path):
+        return HTMLResponse("Legacy page not found", status_code=404)
+    with open(html_path, "r", encoding="utf-8") as f:
+        return HTMLResponse(f.read())
+
+
+# ── Static asset routes for memory-garden frontend ──
+# memory-garden 前端的静态资源路由(jsx / 顶层 jsx 文件)
+# Babel-in-browser 会从这些路径 fetch 源码再做 JSX → JS 转译
+_STATIC_BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+def _safe_static_file(rel_path: str, allowed_dirs: tuple) -> str | None:
+    """
+    Resolve a static file path safely, preventing directory traversal.
+    Returns absolute path or None if disallowed.
+    """
+    base = os.path.realpath(_STATIC_BASE_DIR)
+    target = os.path.realpath(os.path.join(base, rel_path))
+    if not target.startswith(base + os.sep) and target != base:
+        return None
+    rel = os.path.relpath(target, base).replace(os.sep, "/")
+    if not any(rel == d or rel.startswith(d + "/") for d in allowed_dirs):
+        return None
+    if not os.path.isfile(target):
+        return None
+    return target
+
+
+@mcp.custom_route("/js/{filename}", methods=["GET"])
+async def serve_jsx_module(request):
+    """记忆花园的 jsx 模块(api / atoms / garden / grid / timeline / detail / app)"""
+    from starlette.responses import FileResponse, JSONResponse
+    filename = request.path_params["filename"]
+    target = _safe_static_file(f"js/{filename}", allowed_dirs=("js",))
+    if not target:
+        return JSONResponse({"error": "not found"}, status_code=404)
+    return FileResponse(target, media_type="application/javascript")
+
+
+@mcp.custom_route("/tweaks-panel.jsx", methods=["GET"])
+async def serve_tweaks_panel(request):
+    """顶层 tweaks-panel.jsx"""
+    from starlette.responses import FileResponse, JSONResponse
+    target = _safe_static_file("tweaks-panel.jsx", allowed_dirs=("tweaks-panel.jsx",))
+    if not target:
+        return JSONResponse({"error": "not found"}, status_code=404)
+    return FileResponse(target, media_type="application/javascript")
 
 # =============================================================
 # /health endpoint: lightweight keepalive
@@ -122,6 +177,10 @@ async def api_list_buckets(request):
                 "weight": round(score, 2),
                 "created": meta.get("created", ""),
                 "last_active": meta.get("last_active", ""),
+                # --- Dehydration outputs (list view uses summary for preview) ---
+                # --- 脱水产物（列表用 summary 做预览） ---
+                "summary": meta.get("summary", ""),
+                "todos_count": len(meta.get("todos", []) or []),
             })
         result.sort(key=lambda x: x["weight"], reverse=True)
         return JSONResponse(result, headers={"Access-Control-Allow-Origin": "*"})
@@ -154,6 +213,13 @@ async def api_get_bucket(request):
             "weight": round(score, 2),
             "created": meta.get("created", ""),
             "last_active": meta.get("last_active", ""),
+            # --- Dehydration outputs (detail view shows all) ---
+            # --- 脱水产物（详情页全展示） ---
+            "summary": meta.get("summary", ""),
+            "core_facts": meta.get("core_facts", []) or [],
+            "todos": meta.get("todos", []) or [],
+            "keywords": meta.get("keywords", []) or [],
+            "emotion_state": meta.get("emotion_state", ""),
         }, headers={"Access-Control-Allow-Origin": "*"})
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
@@ -190,6 +256,9 @@ async def _merge_or_create(
     valence: float,
     arousal: float,
     name: str = "",
+    # --- Dehydration extraction (optional; pre-computed by caller) ---
+    # --- 脱水产物（调用方预先算好传入） ---
+    extracted: dict = None,
 ) -> tuple[str, bool]:
     """
     Check if a similar bucket exists for merging; merge if so, create if not.
@@ -197,6 +266,7 @@ async def _merge_or_create(
     检查是否有相似桶可合并，有则合并，无则新建。
     返回 (桶ID或名称, 是否合并)。
     """
+    extracted = extracted or {}
     try:
         existing = await bucket_mgr.search(content, limit=1)
     except Exception as e:
@@ -207,15 +277,44 @@ async def _merge_or_create(
         bucket = existing[0]
         try:
             merged = await dehydrator.merge(bucket["content"], content)
-            await bucket_mgr.update(
-                bucket["id"],
-                content=merged,
-                tags=list(set(bucket["metadata"].get("tags", []) + tags)),
-                importance=max(bucket["metadata"].get("importance", 5), importance),
-                domain=list(set(bucket["metadata"].get("domain", []) + domain)),
-                valence=valence,
-                arousal=arousal,
-            )
+            # --- Re-extract structured fields from the merged content ---
+            # --- 合并后重新提取脱水产物（todos 等可能因新内容变化） ---
+            try:
+                merged_extracted = await dehydrator.extract_structured(merged)
+            except Exception as e:
+                logger.warning(f"Re-extract after merge failed / 合并后重提脱水失败: {e}")
+                merged_extracted = {}
+            update_kwargs = {
+                "content": merged,
+                "tags": list(set(bucket["metadata"].get("tags", []) + tags)),
+                "importance": max(bucket["metadata"].get("importance", 5), importance),
+                "domain": list(set(bucket["metadata"].get("domain", []) + domain)),
+                "valence": valence,
+                "arousal": arousal,
+            }
+            # Only overwrite dehydration fields if new extraction produced non-empty
+            # 仅在重新提取有产物时覆盖原有脱水字段
+            if merged_extracted.get("summary"):
+                update_kwargs["summary"] = merged_extracted["summary"]
+            if merged_extracted.get("core_facts"):
+                update_kwargs["core_facts"] = merged_extracted["core_facts"]
+            if merged_extracted.get("todos"):
+                # Union with existing todos to avoid losing in-flight items
+                # 与已有 todos 取并集，避免丢失进行中事项
+                old_todos = bucket["metadata"].get("todos", []) or []
+                seen = set()
+                union = []
+                for t in old_todos + merged_extracted["todos"]:
+                    if t and t not in seen:
+                        seen.add(t)
+                        union.append(t)
+                update_kwargs["todos"] = union
+            if merged_extracted.get("keywords"):
+                update_kwargs["keywords"] = merged_extracted["keywords"]
+            if merged_extracted.get("emotion_state"):
+                update_kwargs["emotion_state"] = merged_extracted["emotion_state"]
+
+            await bucket_mgr.update(bucket["id"], **update_kwargs)
             return bucket["metadata"].get("name", bucket["id"]), True
         except Exception as e:
             logger.warning(f"Merge failed, creating new / 合并失败，新建: {e}")
@@ -228,6 +327,11 @@ async def _merge_or_create(
         valence=valence,
         arousal=arousal,
         name=name or None,
+        summary=extracted.get("summary", ""),
+        core_facts=extracted.get("core_facts", []),
+        todos=extracted.get("todos", []),
+        keywords=extracted.get("keywords", []),
+        emotion_state=extracted.get("emotion_state", ""),
     )
     return bucket_id, False
 
@@ -363,14 +467,22 @@ async def hold(
     importance = max(1, min(10, importance))
     extra_tags = [t.strip() for t in tags.split(",") if t.strip()]
 
-    # --- Step 1: auto-tagging / 自动打标 ---
+    # --- Step 1: auto-tagging + structured extraction in parallel ---
+    # --- 自动打标 + 结构化脱水提取（并行调用 LLM，少等一轮）---
     try:
-        analysis = await dehydrator.analyze(content)
+        analysis, extracted = await asyncio.gather(
+            dehydrator.analyze(content),
+            dehydrator.extract_structured(content),
+        )
     except Exception as e:
-        logger.warning(f"Auto-tagging failed, using defaults / 自动打标失败: {e}")
+        logger.warning(f"Auto-tagging or extraction failed, using defaults / 打标或脱水失败: {e}")
         analysis = {
             "domain": ["未分类"], "valence": 0.5, "arousal": 0.3,
             "tags": [], "suggested_name": "",
+        }
+        extracted = {
+            "summary": "", "core_facts": [], "todos": [],
+            "keywords": [], "emotion_state": "",
         }
 
     domain = analysis["domain"]
@@ -390,6 +502,7 @@ async def hold(
         valence=valence,
         arousal=arousal,
         name=suggested_name,
+        extracted=extracted,
     )
 
     if is_merged:
@@ -429,9 +542,25 @@ async def grow(content: str) -> str:
     created = 0
     merged = 0
 
-    # --- Step 2: merge or create each item (with per-item error handling) ---
+    # --- Step 2: parallel structured extraction for all items ---
+    # --- 并行做所有 item 的脱水提取（一次过，避免逐条串行等 LLM）---
+    try:
+        extracted_list = await asyncio.gather(
+            *[dehydrator.extract_structured(item["content"]) for item in items],
+            return_exceptions=True,
+        )
+    except Exception as e:
+        logger.warning(f"Batch extraction failed / 批量脱水失败: {e}")
+        extracted_list = [None] * len(items)
+
+    # --- Step 3: merge or create each item (with per-item error handling) ---
     # --- 逐条合并或新建（单条失败不影响其他）---
-    for item in items:
+    for item, item_extracted in zip(items, extracted_list):
+        if isinstance(item_extracted, Exception) or item_extracted is None:
+            item_extracted = {
+                "summary": "", "core_facts": [], "todos": [],
+                "keywords": [], "emotion_state": "",
+            }
         try:
             result_name, is_merged = await _merge_or_create(
                 content=item["content"],
@@ -441,6 +570,7 @@ async def grow(content: str) -> str:
                 valence=item.get("valence", 0.5),
                 arousal=item.get("arousal", 0.3),
                 name=item.get("name", ""),
+                extracted=item_extracted,
             )
 
             if is_merged:

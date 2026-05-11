@@ -34,7 +34,7 @@ def load_config(config_path: str = None) -> dict:
         "buckets_dir": os.path.join(os.path.dirname(os.path.abspath(__file__)), "buckets"),
         "merge_threshold": 75,
         "dehydration": {
-            "model": "deepseek-chat",
+            "model": "deepseek-v4-flash",
             "base_url": "https://api.deepseek.com/v1",
             "api_key": "",
             "max_tokens": 1024,
@@ -85,6 +85,16 @@ def load_config(config_path: str = None) -> dict:
     env_api_key = os.environ.get("OMBRE_API_KEY", "")
     if env_api_key:
         config.setdefault("dehydration", {})["api_key"] = env_api_key
+
+    # Model / base_url overrides — lets you switch LLM provider without code changes
+    # 模型 / API 地址覆盖 —— 切换 LLM 提供商不用改代码
+    env_model = os.environ.get("OMBRE_MODEL", "")
+    if env_model:
+        config.setdefault("dehydration", {})["model"] = env_model
+
+    env_base_url = os.environ.get("OMBRE_BASE_URL", "")
+    if env_base_url:
+        config.setdefault("dehydration", {})["base_url"] = env_base_url
 
     env_transport = os.environ.get("OMBRE_TRANSPORT", "")
     if env_transport:

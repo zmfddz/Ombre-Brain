@@ -106,6 +106,12 @@ class BucketManager:
         arousal: float = 0.3,
         bucket_type: str = "dynamic",
         name: str = None,
+        # --- Dehydration extraction outputs / 脱水产物 ---
+        summary: str = "",
+        core_facts: list[str] = None,
+        todos: list[str] = None,
+        keywords: list[str] = None,
+        emotion_state: str = "",
     ) -> str:
         """
         Create a new memory bucket, return bucket ID.
@@ -130,6 +136,12 @@ class BucketManager:
             "created": now_iso(),
             "last_active": now_iso(),
             "activation_count": 1,
+            # --- Dehydration outputs / 脱水产物 ---
+            "summary": summary or "",
+            "core_facts": core_facts or [],
+            "todos": todos or [],
+            "keywords": keywords or [],
+            "emotion_state": emotion_state or "",
         }
 
         # --- Assemble Markdown file (frontmatter + body) ---
@@ -225,6 +237,17 @@ class BucketManager:
             post["name"] = sanitize_name(kwargs["name"])
         if "resolved" in kwargs:
             post["resolved"] = bool(kwargs["resolved"])
+        # --- Dehydration outputs / 脱水产物 ---
+        if "summary" in kwargs:
+            post["summary"] = str(kwargs["summary"] or "")[:200]
+        if "core_facts" in kwargs:
+            post["core_facts"] = list(kwargs["core_facts"] or [])
+        if "todos" in kwargs:
+            post["todos"] = list(kwargs["todos"] or [])
+        if "keywords" in kwargs:
+            post["keywords"] = list(kwargs["keywords"] or [])
+        if "emotion_state" in kwargs:
+            post["emotion_state"] = str(kwargs["emotion_state"] or "")[:50]
 
         # --- Auto-refresh activation time / 自动刷新激活时间 ---
         post["last_active"] = now_iso()

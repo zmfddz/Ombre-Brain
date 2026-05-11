@@ -151,7 +151,7 @@ class Dehydrator:
         # --- Read dehydration API config / 读取脱水 API 配置 ---
         dehy_cfg = config.get("dehydration", {})
         self.api_key = dehy_cfg.get("api_key", "")
-        self.model = dehy_cfg.get("model", "deepseek-chat")
+        self.model = dehy_cfg.get("model", "deepseek-v4-flash")
         self.base_url = dehy_cfg.get("base_url", "https://api.deepseek.com/v1")
         self.max_tokens = dehy_cfg.get("max_tokens", 1024)
         self.temperature = dehy_cfg.get("temperature", 0.1)
@@ -408,6 +408,89 @@ class Dehydrator:
             header += f" [情感:V{valence:.1f}/A{arousal:.1f}]"
             header += "\n"
         return f"{header}{content}"
+
+    # ---------------------------------------------------------
+    # Structured extraction: parse the dehydration prompt's JSON
+    # 结构化提取：解析脱水 prompt 的 JSON 输出
+    # Returns {summary, core_facts, todos, keywords, emotion_state}
+    # 用于 hold/grow 创建桶时把脱水产物存入 metadata
+    # 现有 dehydrate() 仍返回上下文字符串供 breath 用，不变
+    # ---------------------------------------------------------
+    async def extract_structured(self, content: str) -> dict:
+        """
+        Call the dehydration prompt and parse its JSON into structured fields.
+        Returns dict with keys: summary, core_facts, todos, keywords, emotion_state.
+        Empty defaults on failure / no API / short content.
+        """
+        default = {
+            "summary": "",
+            "core_facts": [],
+            "todos": [],
+            "keywords": [],
+            "emotion_state": "",
+        }
+        if not content or not content.strip():
+            return default
+        if not self.api_available:
+            return default
+        try:
+            raw = await self._api_dehydrate(content)
+            if not raw:
+                return default
+            return self._parse_structured(raw)
+        except Exception as e:
+            logger.warning(
+                f"Structured extraction failed / 结构化脱水失败: {e}"
+            )
+            return default
+
+    def _parse_structured(self, raw: str) -> dict:
+        """
+        Parse and validate the dehydration JSON.
+        解析并校验脱水 JSON。
+        """
+        default = {
+            "summary": "",
+            "core_facts": [],
+            "todos": [],
+            "keywords": [],
+            "emotion_state": "",
+        }
+        try:
+            cleaned = raw.strip()
+            if cleaned.startswith("```"):
+                cleaned = cleaned.split("\n", 1)[-1].rsplit("```", 1)[0]
+            result = json.loads(cleaned)
+        except (json.JSONDecodeError, IndexError, ValueError):
+            logger.warning(
+                f"Dehydration JSON parse failed / 脱水 JSON 解析失败: {raw[:200]}"
+            )
+            return default
+        if not isinstance(result, dict):
+            return default
+
+        def list_of_str(value, limit, item_max_len=200):
+            if not isinstance(value, list):
+                return []
+            cleaned_list = []
+            for item in value:
+                if not item:
+                    continue
+                s = str(item).strip()
+                if not s:
+                    continue
+                cleaned_list.append(s[:item_max_len])
+                if len(cleaned_list) >= limit:
+                    break
+            return cleaned_list
+
+        return {
+            "summary": str(result.get("summary", ""))[:200],
+            "core_facts": list_of_str(result.get("core_facts"), limit=10),
+            "todos": list_of_str(result.get("todos"), limit=20),
+            "keywords": list_of_str(result.get("keywords"), limit=15, item_max_len=50),
+            "emotion_state": str(result.get("emotion_state", ""))[:50],
+        }
 
     # ---------------------------------------------------------
     # Auto-tagging: analyze content for domain + emotion + tags

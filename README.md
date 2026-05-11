@@ -162,7 +162,7 @@ All parameters in `config.yaml` (copy from `config.example.yaml`). Key ones:
 |---|---|---|
 | `transport` | `stdio`（本地）/ `streamable-http`（远程）| `stdio` |
 | `buckets_dir` | 记忆桶存储路径 / Bucket storage path | `./buckets/` |
-| `dehydration.model` | 脱水用的 LLM 模型 / LLM model for dehydration | `deepseek-chat` |
+| `dehydration.model` | 脱水用的 LLM 模型 / LLM model for dehydration | `deepseek-v4-flash` |
 | `dehydration.base_url` | API 地址 / API endpoint | `https://api.deepseek.com/v1` |
 | `decay.lambda` | 衰减速率，越大越快忘 / Decay rate | `0.05` |
 | `decay.threshold` | 归档阈值 / Archive threshold | `0.3` |
