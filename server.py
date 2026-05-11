@@ -67,13 +67,62 @@ mcp = FastMCP(
     port=8000,
 )
 
+import re as _re_inline  # for inlining jsx into the home page
+
+# Cache the inlined HTML so we only build it once per process
+_INLINED_HOME_HTML: str | None = None
+
+def _build_inlined_home() -> str:
+    """
+    Read index.html and inline every <script type="text/babel" src="..."> tag
+    so the home page is fully self-contained — zero child requests.
+
+    Why: Cloudflare Access treats sub-resource fetches (Babel's XHR for jsx) as
+    API calls and challenges them with 302, even when the parent page already
+    passed auth via cookie. Inlining the jsx avoids the second challenge entirely.
+    """
+    base = os.path.dirname(os.path.abspath(__file__))
+    with open(os.path.join(base, "index.html"), "r", encoding="utf-8") as f:
+        html = f.read()
+
+    # Matches both <script type="text/babel" src="js/api.jsx"></script> and
+    # the bare <script type="text/babel" src="tweaks-panel.jsx"></script> form.
+    pattern = _re_inline.compile(
+        r'<script\s+type="text/babel"\s+src="([^"]+)"\s*></script>'
+    )
+
+    def replace(match):
+        src = match.group(1)
+        # Only inline same-directory paths (defense against weird srcs)
+        if src.startswith("http://") or src.startswith("https://") or src.startswith("//"):
+            return match.group(0)
+        file_path = os.path.join(base, src)
+        # Resolve and bound-check
+        real = os.path.realpath(file_path)
+        if not real.startswith(os.path.realpath(base) + os.sep):
+            return match.group(0)
+        if not os.path.isfile(real):
+            return match.group(0)
+        with open(real, "r", encoding="utf-8") as ff:
+            jsx_body = ff.read()
+        # Comment marker helps when you View Source / debug
+        return (
+            f'<script type="text/babel" data-inlined-from="{src}">\n'
+            f'{jsx_body}\n'
+            f'</script>'
+        )
+
+    return pattern.sub(replace, html)
+
+
 @mcp.custom_route("/", methods=["GET"])
 async def serve_home(request):
-    """记忆花园首页(memory-garden 前端)"""
+    """记忆花园首页(memory-garden 前端) —— 内联所有 jsx,规避 CF Access 二次拦截"""
     from starlette.responses import HTMLResponse
-    html_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "index.html")
-    with open(html_path, "r", encoding="utf-8") as f:
-        return HTMLResponse(f.read())
+    global _INLINED_HOME_HTML
+    if _INLINED_HOME_HTML is None:
+        _INLINED_HOME_HTML = _build_inlined_home()
+    return HTMLResponse(_INLINED_HOME_HTML)
 
 
 @mcp.custom_route("/legacy", methods=["GET"])
