@@ -160,7 +160,7 @@ function BucketCard({ bucket, onOpen, delay }) {
       <div style={{
         fontFamily: "var(--kai)", fontSize: "0.88rem",
         color: "var(--ink-soft)", lineHeight: 1.6, flex: 1,
-        display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical",
+        display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical",
         overflow: "hidden", textWrap: "pretty",
       }}>
         {pickPreview(b) || "（还没有记忆内容）"}

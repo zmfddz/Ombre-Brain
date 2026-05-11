@@ -82,7 +82,8 @@ const TYPE_LABEL = {
 
 function DetailContent({ bucket, onClose }) {
   const b = bucket;
-  const content = b.content || "";
+  // 后端 _apply_wikilinks 给 content 自动加 [[关键词]] 双链供 Obsidian 用，前端展示要剥掉
+  const content = stripWikilinks(b.content || "");
   const domains = parseDomains(b.domain);
   const tags = parseTags(b.tags);
   const hearts = impToHearts(b.importance);
@@ -177,38 +178,6 @@ function DetailContent({ bucket, onClose }) {
                   <path d="M 8 13 L 8 16" stroke="oklch(0.45 0.08 145)" strokeWidth="1.1" strokeLinecap="round" />
                 </svg>
                 <span>{todo}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {/* 事实骨架 —— core_facts 用素净中点列表 */}
-      {Array.isArray(b.core_facts) && b.core_facts.length > 0 && (
-        <div style={{ padding: "24px 40px 22px", borderBottom: "1px solid var(--line)" }}>
-          <div style={{
-            fontFamily: "var(--mono)", fontSize: "0.65rem",
-            color: "var(--ink-faint)", letterSpacing: "0.14em",
-            textTransform: "uppercase", marginBottom: "14px",
-            display: "flex", alignItems: "baseline", gap: "10px",
-          }}>
-            <span>facts · 几件被记住的</span>
-            <span style={{ fontFamily: "var(--serif)", fontStyle: "italic", fontSize: "0.92rem", color: "var(--ink-faint)", textTransform: "none", letterSpacing: 0 }}>
-              脱水后剩下的骨架
-            </span>
-          </div>
-          <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "8px" }}>
-            {b.core_facts.map((fact, i) => (
-              <li key={i} style={{
-                display: "flex", alignItems: "flex-start", gap: "12px",
-                fontFamily: "var(--kai)", fontSize: "0.96rem",
-                color: "var(--ink-soft)", lineHeight: 1.7,
-              }}>
-                <span style={{
-                  color: "var(--moss)", fontSize: "1.4rem", lineHeight: 1,
-                  flexShrink: 0, marginTop: "-2px",
-                }}>·</span>
-                <span>{fact}</span>
               </li>
             ))}
           </ul>

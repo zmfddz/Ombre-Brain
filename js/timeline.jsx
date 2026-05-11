@@ -7,10 +7,12 @@ const { PlantIcon, parseDomains, moodOf, impToHearts, fmtRelative } = window;
 const MONTH_CN = ["一", "二", "三", "四", "五", "六", "七", "八", "九", "十", "十一", "十二"];
 
 function TimelineView({ buckets, onOpen }) {
+  // 藤蔓按"种下时间"(created)分组+排序 —— 这是花园的生长史，不是最近触碰史
+  // last_active 是检索/更新时间，时间线展示不合适
   const months = useMemoT(() => {
     const map = new Map();
     for (const b of buckets) {
-      const t = b.last_active || b.created;
+      const t = b.created || b.last_active;
       if (!t) continue;
       const d = new Date(t);
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
@@ -19,7 +21,7 @@ function TimelineView({ buckets, onOpen }) {
     }
     const arr = Array.from(map.values()).sort((a, b) => b.key.localeCompare(a.key));
     arr.forEach((m) => {
-      m.items.sort((a, b) => new Date(b.last_active || b.created) - new Date(a.last_active || a.created));
+      m.items.sort((a, b) => new Date(b.created || b.last_active) - new Date(a.created || a.last_active));
     });
     return arr;
   }, [buckets]);

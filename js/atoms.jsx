@@ -83,12 +83,19 @@ function fmtDate(iso) {
   return `${d.getFullYear()}.${m}.${day}`;
 }
 
-// 取一段预览文本：
-//   列表接口给 summary（后端脱水产物），详情接口才有完整 content
-//   所以优先 summary，详情场景才回退 content
+// 去掉 Obsidian 双链标记 [[关键词]] -> 关键词
+// 后端 _apply_wikilinks 给 content 自动加双链，前端展示要剥掉
+function stripWikilinks(s) {
+  if (!s) return "";
+  return String(s).replace(/\[\[([^\[\]]+?)\]\]/g, "$1");
+}
+
+// 卡片/tooltip/聚合面板的预览文本：
+//   统一用 content 的前若干字（preview 字段，由后端 list 接口截取）
+//   summary 留在 API 里以备将来，但 UI 不再用 —— LLM 提炼跟 content 嚼烂的米饭一样
 function pickPreview(b) {
   if (!b) return "";
-  return b.summary || b.content || "";
+  return stripWikilinks(b.preview || b.content || "");
 }
 
 // importance 1-10 → 1-5 心
@@ -745,6 +752,6 @@ const swayCSS = `
 
 Object.assign(window, {
   fmtRelative, fmtDate, parseDomains, parseTags, getForm,
-  impToHearts, moodOf, arousalLabel, pickPreview,
+  impToHearts, moodOf, arousalLabel, pickPreview, stripWikilinks,
   PlantIcon, HeartMeter, Tag, StatBand, Hero, ViewSwitcher,
 });

@@ -202,6 +202,13 @@ async def health_check(request):
 # REST API endpoints for frontend (fanfan.party)
 # 前端 API 接口
 # =============================================================
+import re as _re_wl
+_WIKILINK_RE = _re_wl.compile(r"\[\[([^\[\]]+?)\]\]")
+def _strip_wikilinks(s: str) -> str:
+    """[[关键词]] -> 关键词. Used for previews and any user-facing text."""
+    return _WIKILINK_RE.sub(r"\1", s or "")
+
+
 @mcp.custom_route("/api/buckets", methods=["GET"])
 async def api_list_buckets(request):
     """列出所有记忆桶的摘要信息"""
@@ -213,6 +220,11 @@ async def api_list_buckets(request):
         for b in buckets:
             meta = b.get("metadata", {})
             score = decay_engine.calculate_score(meta)
+            # --- Preview text: prefer LLM summary; fallback to content head ---
+            # --- 卡片预览：优先 LLM 脱水的 summary，没有就回退到 content 截取 ---
+            # 老桶没有 summary 字段，这条 fallback 保证它们也能在列表显示一段预览
+            content_stripped = _strip_wikilinks(b.get("content", ""))
+            preview = content_stripped[:120] + ("…" if len(content_stripped) > 120 else "")
             result.append({
                 "id": b["id"],
                 "name": meta.get("name", "未命名"),
@@ -228,7 +240,8 @@ async def api_list_buckets(request):
                 "last_active": meta.get("last_active", ""),
                 # --- Dehydration outputs (list view uses summary for preview) ---
                 # --- 脱水产物（列表用 summary 做预览） ---
-                "summary": meta.get("summary", ""),
+                "summary": _strip_wikilinks(meta.get("summary", "")),
+                "preview": preview,  # 兜底预览：content 截取 + 去 wikilinks
                 "todos_count": len(meta.get("todos", []) or []),
             })
         result.sort(key=lambda x: x["weight"], reverse=True)
@@ -262,13 +275,12 @@ async def api_get_bucket(request):
             "weight": round(score, 2),
             "created": meta.get("created", ""),
             "last_active": meta.get("last_active", ""),
-            # --- Dehydration outputs (detail view shows all) ---
-            # --- 脱水产物（详情页全展示） ---
-            "summary": meta.get("summary", ""),
-            "core_facts": meta.get("core_facts", []) or [],
+            # --- Dehydration outputs ---
+            # --- 脱水产物 ---
+            # core_facts / keywords / emotion_state 留在 metadata 里以备将来，但 API 不返回
+            # core_facts 跟 content 是嚼烂的米饭，前端用 content 即可
+            "summary": _strip_wikilinks(meta.get("summary", "")),
             "todos": meta.get("todos", []) or [],
-            "keywords": meta.get("keywords", []) or [],
-            "emotion_state": meta.get("emotion_state", ""),
         }, headers={"Access-Control-Allow-Origin": "*"})
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
